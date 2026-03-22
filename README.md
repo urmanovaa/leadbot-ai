@@ -1,187 +1,187 @@
-# LeadBot — AI Lead Generation Assistant
+# LeadBot — AI-ассистент для генерации лидов
 
-**Automated client qualification, real-time conversations, and lead capture — straight to Google Sheets.**
+**Автоматическая квалификация клиентов, живые диалоги и сбор заявок — прямо в Google Sheets.**
 
-LeadBot is an AI-powered sales assistant that engages website visitors, qualifies their needs through natural dialogue, collects contact information with GDPR-style consent, and delivers structured leads to your team automatically.
+LeadBot — это AI-ассистент для бизнеса, который общается с посетителями сайта, квалифицирует их потребности через естественный диалог, собирает контактные данные с согласием на обработку и автоматически передаёт структурированные заявки вашей команде.
 
 ![LeadBot Hero](/screenshots/hero.png)
 
 ---
 
-## ✦ Features
+## ✦ Возможности
 
-- **Conversational AI** — Natural dialogue powered by GPT-4o Mini. Understands context, asks follow-up questions, and guides the conversation toward a qualified lead.
-- **Smart Qualification** — Multi-stage pipeline: greeting → qualification → contact request → consent → lead saved. One question at a time, no spam.
-- **Contact Collection** — Automatically parses Telegram handles and phone numbers from free-text responses.
-- **Legal Consent** — Built-in 152-FZ (Russian GDPR) consent flow before any personal data is stored.
-- **Google Sheets Integration** — Leads land in your spreadsheet instantly via webhook. Name, contact, request summary, full conversation log.
-- **Premium UI** — Warm minimalist design. Quiet luxury aesthetic. Looks like a product, not a template.
+- **Разговорный AI** — Естественный диалог на базе GPT-4o Mini. Понимает контекст, задаёт уточняющие вопросы и ведёт клиента к оформлению заявки.
+- **Умная квалификация** — Многоступенчатый пайплайн: приветствие → квалификация → запрос контакта → согласие → лид сохранён. Один вопрос за раз, без спама.
+- **Сбор контактов** — Автоматически распознаёт Telegram-ники и номера телефонов из свободного текста.
+- **Согласие по 152-ФЗ** — Встроенный механизм получения согласия на обработку персональных данных перед сохранением.
+- **Интеграция с Google Sheets** — Заявки моментально попадают в таблицу через webhook. Имя, контакт, описание задачи, summary, полный лог диалога.
+- **Премиальный UI** — Тёплый минималистичный дизайн. Эстетика quiet luxury. Выглядит как продукт, а не шаблон.
 
 ---
 
-## ⎯ Demo
+## ⎯ Демо
 
-> 🔗 **Live demo:** *coming soon*
+> 🔗 **Живое демо:** *скоро*
 >
-> In the meantime — clone the repo, add your API keys, and run `npm run dev`.
+> Пока — клонируйте репозиторий, добавьте API-ключи и запустите `npm run dev`.
 
 ---
 
-## ⎯ Screenshots
+## ⎯ Скриншоты
 
-### Chat Flow
+### Диалог с клиентом
 
-![Chat conversation flow](/screenshots/chat-flow.png)
+![Диалог в чате](/screenshots/chat-flow.png)
 
-### Contact Collection
+### Сбор контакта
 
-![Contact request stage](/screenshots/contact-request.png)
+![Запрос контакта](/screenshots/contact-request.png)
 
-### Google Sheets Output
+### Результат в Google Sheets
 
-![Leads in Google Sheets](/screenshots/google-sheets.png)
+![Лиды в Google Sheets](/screenshots/google-sheets.png)
 
 ---
 
-## ⎯ Tech Stack
+## ⎯ Стек технологий
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
+| Слой | Технология |
+|------|-----------|
+| Фреймворк | Next.js 14 (App Router) |
+| Язык | TypeScript |
+| Стили | Tailwind CSS |
 | AI | OpenAI GPT-4o Mini |
-| Animations | Framer Motion |
-| Icons | Lucide React |
-| Lead Storage | Google Sheets (Apps Script webhook) |
+| Анимации | Framer Motion |
+| Иконки | Lucide React |
+| Хранение лидов | Google Sheets (Apps Script webhook) |
 
 ---
 
-## ⎯ How It Works
+## ⎯ Как это работает
 
 ```
-User opens chat → AI greets → asks qualifying questions
-→ understands the task → requests contact (Telegram / phone)
-→ asks for data processing consent → saves lead to Google Sheets
+Клиент открывает чат → AI приветствует → задаёт уточняющие вопросы
+→ понимает задачу → запрашивает контакт (Telegram / телефон)
+→ запрашивает согласие на обработку данных → сохраняет лид в Google Sheets
 ```
 
-**Conversation stages:**
+**Стадии диалога:**
 
-| Stage | What happens |
-|-------|-------------|
-| `greeting` | AI introduces itself, shows quick action buttons |
-| `qualification` | 2–3 clarifying questions about the client's needs |
-| `contact_request` | Asks for Telegram or phone number |
-| `consent_request` | 152-FZ consent with accept/decline buttons |
-| `completed` | Lead saved, thank you message |
+| Стадия | Что происходит |
+|--------|---------------|
+| `greeting` | AI представляется, показывает быстрые действия |
+| `qualification` | 2–3 уточняющих вопроса о задаче клиента |
+| `contact_request` | Запрос Telegram или номера телефона |
+| `consent_request` | Согласие по 152-ФЗ с кнопками подтверждения/отказа |
+| `completed` | Лид сохранён, благодарность клиенту |
 
-**Lead payload sent to Google Sheets:**
+**Данные лида, отправляемые в Google Sheets:**
 
 ```json
 {
   "name": "Алексей",
   "contact": "@alexey_dev",
   "contactType": "telegram",
-  "request": "Need a chatbot for an online store",
-  "summary": "Client needs a chatbot for product consultation and order collection",
+  "request": "Нужен чат-бот для интернет-магазина",
+  "summary": "Клиенту нужен чат-бот для консультации по товарам и сбора заявок",
   "consentGiven": true,
   "source": "website-chat",
-  "rawConversation": "[full dialogue]"
+  "rawConversation": "[полный диалог]"
 }
 ```
 
 ---
 
-## ⎯ Getting Started
+## ⎯ Быстрый старт
 
-### Prerequisites
+### Требования
 
 - Node.js 18+
-- OpenAI API key
-- Google Apps Script webhook URL ([setup guide](https://developers.google.com/apps-script/guides/web))
+- Ключ OpenAI API
+- URL вебхука Google Apps Script ([инструкция по настройке](https://developers.google.com/apps-script/guides/web))
 
-### Installation
+### Установка
 
 ```bash
-git clone https://github.com/your-username/leadbot.git
-cd leadbot
+git clone https://github.com/urmanovaa/leadbot-ai.git
+cd leadbot-ai
 npm install
 ```
 
-### Environment
+### Переменные окружения
 
-Create `.env.local` in the project root:
+Создайте `.env.local` в корне проекта:
 
 ```env
 OPENAI_API_KEY=sk-your-key-here
 GOOGLE_SCRIPT_WEBHOOK_URL=https://script.google.com/macros/s/your-script-id/exec
 ```
 
-### Run
+### Запуск
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Click the chat icon in the bottom-right corner.
+Откройте [http://localhost:3000](http://localhost:3000). Нажмите на иконку чата в правом нижнем углу.
 
 ---
 
-## ⎯ Project Structure
+## ⎯ Структура проекта
 
 ```
 app/
-  page.tsx                    Landing page
-  layout.tsx                  Root layout
-  api/chat/route.ts           AI chat endpoint
-  api/lead/route.ts           Manual lead submission
+  page.tsx                    Лендинг
+  layout.tsx                  Корневой layout
+  api/chat/route.ts           AI-чат эндпоинт
+  api/lead/route.ts           Ручная отправка лида
 
 components/
   chat/
-    chat-widget.tsx           Floating chat button
-    chat-window.tsx           Main chat container + logic
-    message-bubble.tsx        Message component
-    chat-input.tsx            Input with auto-resize
-    quick-actions.tsx         Quick action buttons
-    consent-actions.tsx       Consent UI (152-FZ)
-    typing-indicator.tsx      Typing animation
+    chat-widget.tsx           Плавающая кнопка чата
+    chat-window.tsx           Основной контейнер чата + логика
+    message-bubble.tsx        Компонент сообщения
+    chat-input.tsx            Ввод с авто-ресайзом
+    quick-actions.tsx         Кнопки быстрых действий
+    consent-actions.tsx       UI согласия (152-ФЗ)
+    typing-indicator.tsx      Анимация набора текста
   landing/
-    hero.tsx                  Hero section
-    features.tsx              Features grid
-    how-it-works.tsx          Process steps
-    cta.tsx                   Call to action
-    footer.tsx                Footer
+    hero.tsx                  Hero-секция
+    features.tsx              Сетка возможностей
+    how-it-works.tsx          Шаги процесса
+    cta.tsx                   Призыв к действию
+    footer.tsx                Подвал
 
 lib/
-  types.ts                    TypeScript interfaces
-  openai.ts                   OpenAI client
-  prompts.ts                  System prompts per stage
-  contact-parser.ts           Telegram/phone parser
-  lead-summary.ts             Summary generator
-  google-sheets.ts            Webhook integration
+  types.ts                    TypeScript-интерфейсы
+  openai.ts                   Клиент OpenAI
+  prompts.ts                  Системные промпты по стадиям
+  contact-parser.ts           Парсер Telegram/телефона
+  lead-summary.ts             Генератор summary
+  google-sheets.ts            Интеграция с webhook
 ```
 
 ---
 
-## ⎯ Use Cases
+## ⎯ Кейсы использования
 
-- **Digital agencies** — Qualify inbound leads and route them to the right team member.
-- **SaaS companies** — Capture trial requests and product inquiries 24/7.
-- **Freelancers** — Automate initial client conversations while you focus on delivery.
-- **Service businesses** — Replace contact forms with intelligent conversations that convert better.
-
----
-
-## ⎯ Why It Matters
-
-Contact forms convert at 2–3%. Chat converts at 10–15%.
-
-LeadBot combines the conversion power of live chat with the scalability of AI. Every conversation is qualified, every lead is structured, and your team only talks to people who are ready to buy.
-
-No missed leads. No manual data entry. No after-hours gaps.
+- **Digital-агентства** — Квалификация входящих заявок и маршрутизация к нужному специалисту.
+- **SaaS-компании** — Сбор запросов на демо и консультации 24/7.
+- **Фрилансеры** — Автоматизация первичного общения с клиентами, пока вы заняты работой.
+- **Сервисный бизнес** — Замена контактных форм на интеллектуальные диалоги с более высокой конверсией.
 
 ---
 
-**Built with** Next.js, TypeScript, OpenAI, and Google Sheets.
+## ⎯ Почему это важно
 
-**License:** MIT
+Контактные формы конвертируют на 2–3%. Чат — на 10–15%.
+
+LeadBot объединяет конверсионную силу живого чата с масштабируемостью AI. Каждый диалог квалифицирован, каждая заявка структурирована, а ваша команда общается только с теми, кто готов к сотрудничеству.
+
+Ни одного пропущенного лида. Ни одного ручного ввода. Ни одного пробела в нерабочее время.
+
+---
+
+**Создано на** Next.js, TypeScript, OpenAI и Google Sheets.
+
+**Лицензия:** MIT
