@@ -9,10 +9,10 @@ interface QuickActionsProps {
 }
 
 const defaultActions: QuickAction[] = [
-  { label: "Чат-бот", message: "Мне нужен чат-бот для бизнеса" },
-  { label: "AI-ассистент", message: "Хочу AI-ассистента для компании" },
-  { label: "Автоматизация", message: "Хочу автоматизировать бизнес-процессы" },
-  { label: "Сайт", message: "Мне нужен сайт" },
+  { label: "Какие услуги есть?", message: "Какие услуги вы предоставляете?" },
+  { label: "Хочу AI-бота", message: "Хочу AI-бота для бизнеса" },
+  { label: "Нужна автоматизация", message: "Нужна автоматизация процессов" },
+  { label: "Сколько стоит?", message: "Сколько стоят ваши услуги?" },
 ];
 
 export function QuickActions({ actions = defaultActions, onSelect }: QuickActionsProps) {

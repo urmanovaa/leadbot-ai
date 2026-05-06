@@ -4,9 +4,7 @@ import { motion } from "framer-motion";
 import {
   MessageSquareText,
   BrainCircuit,
-  ShieldCheck,
   Sheet,
-  Clock,
   Sparkles,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
@@ -20,39 +18,27 @@ interface Feature {
 const features: Feature[] = [
   {
     icon: MessageSquareText,
-    title: "Умный чат-виджет",
+    title: "AI-боты для заявок",
     description:
-      "Встраивается на сайт за 2 минуты. Общается с клиентами естественным языком, понимает контекст.",
+      "Боты, которые отвечают клиентам, уточняют задачу, собирают контакты и передают готовую заявку.",
   },
   {
     icon: BrainCircuit,
-    title: "Квалификация лидов",
+    title: "FAQ-ассистенты",
     description:
-      "AI задаёт уточняющие вопросы, определяет потребность и формирует структурированную заявку.",
+      "Ассистенты, которые отвечают на типовые вопросы по базе знаний, услугам, срокам и процессу работы.",
   },
   {
     icon: Sheet,
-    title: "Google Sheets",
+    title: "Автоматизация документов",
     description:
-      "Лиды автоматически сохраняются в таблицу. Имя, контакт, запрос, summary — всё на месте.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Согласие 152-ФЗ",
-    description:
-      "Запрашивает согласие на обработку данных перед сохранением. Вы защищены юридически.",
-  },
-  {
-    icon: Clock,
-    title: "Работает 24/7",
-    description:
-      "Отвечает клиентам мгновенно в любое время дня и ночи. Без перерывов.",
+      "Помощники для подготовки ТЗ, описаний, инструкций, брифов и других рабочих материалов.",
   },
   {
     icon: Sparkles,
-    title: "GPT-4o Mini",
+    title: "AI-инструменты для специалистов",
     description:
-      "Быстрые, точные и релевантные ответы на базе новейшей модели OpenAI.",
+      "Решения, которые помогают быстрее искать, структурировать и обрабатывать информацию.",
   },
 ];
 
@@ -69,14 +55,12 @@ export function Features() {
             transition={{ duration: 0.5 }}
           >
             <span className="block text-[11px] uppercase tracking-[0.25em] text-muted font-normal mb-6">
-              Возможности
+              Услуги
             </span>
             <h2 className="text-3xl sm:text-[2.5rem] font-light text-ink tracking-[-0.01em] leading-[1.15]">
-              Всё для
+              Что я могу
               <br />
-              автоматического
-              <br />
-              сбора заявок
+              автоматизировать
             </h2>
           </motion.div>
 

@@ -16,19 +16,19 @@ export function CTA() {
         <div className="grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-24 items-center">
           <div>
             <span className="block text-[11px] uppercase tracking-[0.25em] text-muted font-normal mb-6">
-              Начать
+              Консультация
             </span>
             <h2 className="text-3xl sm:text-[2.5rem] font-light text-ink tracking-[-0.01em] leading-[1.15]">
-              Собирайте заявки
+              Хотите понять, что можно
               <br />
-              на автопилоте
+              автоматизировать?
             </h2>
           </div>
 
           <div className="lg:border-l lg:border-border lg:pl-24">
             <p className="text-[15px] text-muted leading-[1.7] font-light mb-8 max-w-sm">
-              Попробуйте AI-ассистента прямо сейчас. Нажмите на иконку чата
-              в правом нижнем углу экрана.
+              Напишите AI-ассистенту на сайте. Он задаст несколько вопросов,
+              поможет сформулировать задачу и передаст заявку мне.
             </p>
             <button
               onClick={() =>
@@ -40,7 +40,7 @@ export function CTA() {
                          hover:bg-accent-hover transition-colors duration-200
                          inline-flex items-center gap-2"
             >
-              Открыть чат
+              Начать диалог
               <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>

@@ -6,10 +6,10 @@ import { ArrowRight, Bot, User } from "lucide-react";
 function ChatPreview() {
   const messages = [
     { role: "bot", text: "Здравствуйте! Чем могу помочь?" },
-    { role: "user", text: "Нужен чат-бот для интернет-магазина" },
-    { role: "bot", text: "Отлично. Какие задачи он должен решать?" },
-    { role: "user", text: "Консультировать по товарам и собирать заявки" },
-    { role: "bot", text: "Понял. Могу передать заявку специалисту. Оставьте Telegram или номер." },
+    { role: "user", text: "Хочу автоматизировать обработку заявок" },
+    { role: "bot", text: "Какие заявки обрабатываете сейчас вручную?" },
+    { role: "user", text: "Клиенты пишут в мессенджеры, менеджер отвечает" },
+    { role: "bot", text: "Понял. Могу предложить AI-бота для этого. Оставьте контакт для связи." },
   ];
 
   return (
@@ -86,7 +86,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="block text-[11px] uppercase tracking-[0.25em] text-muted font-normal mb-10"
             >
-              Интеллектуальная квалификация заявок
+              AI Automation & Prompt Engineering
             </motion.span>
 
             <motion.h1
@@ -95,14 +95,14 @@ export function Hero() {
               transition={{ duration: 0.7, delay: 0.15 }}
               className="text-[2.75rem] sm:text-[3.25rem] lg:text-[3.75rem] font-light text-ink leading-[1.08] tracking-[-0.02em]"
             >
-              AI-ассистент, который
+              AI-автоматизация
               <br />
-              превращает{" "}
+              для{" "}
               <em className="font-normal italic text-accent not-italic" style={{ fontStyle: "italic" }}>
-                диалоги
+                бизнеса
               </em>
               <br />
-              в заявки
+              и экспертов
             </motion.h1>
 
             <motion.div
@@ -118,8 +118,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-[15px] sm:text-base text-muted leading-[1.7] max-w-sm font-light"
             >
-              Отвечает клиентам, уточняет задачу и&nbsp;автоматически сохраняет лиды
-              в&nbsp;Google&nbsp;Sheets.
+              Создаю AI-ботов, ассистентов и&nbsp;инструменты, которые помогают быстрее обрабатывать заявки, отвечать клиентам и&nbsp;сокращать ручную работу.
             </motion.p>
 
             <motion.div
@@ -138,7 +137,7 @@ export function Hero() {
                            hover:bg-accent-hover transition-colors duration-200
                            flex items-center gap-2"
               >
-                Начать диалог
+                Обсудить задачу
                 <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
               <a
@@ -146,9 +145,18 @@ export function Hero() {
                 className="px-6 py-3 text-[13px] font-medium text-ink/60 border border-border rounded-sm
                            hover:border-ink/20 hover:text-ink transition-all duration-200"
               >
-                Как это работает
+                Как я могу помочь
               </a>
             </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+              className="mt-8 text-[12px] text-muted font-light leading-relaxed max-w-sm"
+            >
+              На сайте работает AI-ассистент — он ответит на вопросы о&nbsp;моих услугах и&nbsp;поможет оставить заявку.
+            </motion.p>
           </div>
 
           {/* Right — product showcase */}

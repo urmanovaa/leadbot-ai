@@ -32,18 +32,53 @@ export function parseContact(text: string): ParsedContact | null {
   return null;
 }
 
+const BUSINESS_STOP_WORDS = new Set([
+  "клиника", "клиники", "магазин", "магазина", "бизнес", "бизнеса",
+  "компания", "компании", "кондитерская", "кондитерской", "салон", "салона",
+  "сайт", "сайта", "лендинг", "лендинга", "проект", "проекта",
+  "менеджер", "менеджера", "консультация", "консультации",
+  "прайс", "прайса", "цена", "цены", "доставка", "доставки",
+  "каталог", "каталога", "оплата", "оплаты", "ассистент", "ассистента",
+  "бот", "бота", "автоматизация", "автоматизации", "интеграция", "интеграции",
+  "школа", "школы", "ресторан", "ресторана", "кафе", "студия", "студии",
+  "агентство", "агентства", "стоматология", "стоматологии",
+  "привет", "здравствуйте", "добрый", "хочу", "нужен", "нужна", "нужно",
+]);
+
+function isBusinessWord(word: string): boolean {
+  return BUSINESS_STOP_WORDS.has(word.toLowerCase());
+}
+
 export function parseName(text: string): string | null {
   const namePatterns = [
     /(?:меня зовут|я)\s+([А-ЯЁа-яё]+)/i,
     /(?:имя[:\s]*)\s*([А-ЯЁа-яё]+)/i,
-    /^([А-ЯЁ][а-яё]{2,})\s*$/,
+    /^([А-ЯЁа-яё]{2,})\s*$/i,
   ];
 
   for (const pattern of namePatterns) {
-    const match = text.match(pattern);
+    const match = text.trim().match(pattern);
     if (match) {
-      return match[1].charAt(0).toUpperCase() + match[1].slice(1);
+      const candidate = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      if (isBusinessWord(candidate)) {
+        return null;
+      }
+      return candidate;
     }
   }
   return null;
+}
+
+export function isLikelyName(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed.split(/\s+/).length > 2) return false;
+  if (trimmed.length < 2 || trimmed.length > 30) return false;
+  if (/\d/.test(trimmed)) return false;
+  if (/[@+]/.test(trimmed)) return false;
+  if (!/^[А-ЯЁа-яёA-Za-z\s-]+$/.test(trimmed)) return false;
+  const words = trimmed.split(/\s+/);
+  for (const word of words) {
+    if (isBusinessWord(word)) return false;
+  }
+  return true;
 }

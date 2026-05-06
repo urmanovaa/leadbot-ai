@@ -1,22 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getChatCompletion } from "@/lib/openai";
 import { buildSystemPrompt } from "@/lib/prompts";
-import { parseContact, parseName } from "@/lib/contact-parser";
-import { buildLeadSummary, buildRawConversation } from "@/lib/lead-summary";
+import { parseContact, parseName, isLikelyName } from "@/lib/contact-parser";
+import {
+  buildLeadSummary,
+  buildRawConversation,
+  extractBusinessFromMessages,
+  extractTaskFromMessages,
+  extractInterestFromMessages,
+} from "@/lib/lead-summary";
 import { sendLeadToGoogleSheets } from "@/lib/google-sheets";
+import { sendTelegramNotification } from "@/lib/telegram";
+import { logger } from "@/lib/logger";
 import { ChatApiRequest, ChatStage, CollectedData, ChatMessage } from "@/lib/types";
+
+function determineLeadStatus(data: CollectedData, messageCount: number): string {
+  if (data.contact && data.consentGiven) return "hot";
+  if (data.contact) return "hot";
+  if (data.request && data.request.length > 50) return "warm";
+  if (messageCount >= 4) return "warm";
+  return "cold";
+}
+
+function wasAskingForName(messages: { role: string; content: string }[]): boolean {
+  const lastAssistant = [...messages]
+    .reverse()
+    .find((m) => m.role === "assistant");
+  if (!lastAssistant) return false;
+  const lower = lastAssistant.content.toLowerCase();
+  return (
+    lower.includes("как к вам") ||
+    lower.includes("как вас зовут") ||
+    lower.includes("как можно обращаться") ||
+    lower.includes("ваше имя") ||
+    lower.includes("представьтесь")
+  );
+}
 
 function determineNextStage(
   currentStage: ChatStage,
   userText: string,
   data: CollectedData,
-  messageCount: number
+  messageCount: number,
+  allMessages: { role: string; content: string }[]
 ): { stage: ChatStage; data: CollectedData } {
   const updatedData = { ...data };
 
-  const name = parseName(userText);
-  if (name && !updatedData.name) {
-    updatedData.name = name;
+  const askedForName = wasAskingForName(allMessages);
+
+  if (askedForName && !updatedData.name && isLikelyName(userText)) {
+    const capitalized = userText.trim().charAt(0).toUpperCase() + userText.trim().slice(1).toLowerCase();
+    updatedData.name = capitalized;
+  } else {
+    const name = parseName(userText);
+    if (name && !updatedData.name) {
+      updatedData.name = name;
+    }
   }
 
   const contact = parseContact(userText);
@@ -26,10 +65,17 @@ function determineNextStage(
     if (contact.name) updatedData.name = contact.name;
   }
 
-  if (!updatedData.request) {
-    updatedData.request = userText;
-  } else if (currentStage === "qualification") {
-    updatedData.request += ` | ${userText}`;
+  const isNameOrContact = !!(
+    (askedForName && updatedData.name && !data.name) ||
+    contact
+  );
+
+  if (!isNameOrContact) {
+    if (!updatedData.request) {
+      updatedData.request = userText;
+    } else if (currentStage === "qualification") {
+      updatedData.request += ` | ${userText}`;
+    }
   }
 
   switch (currentStage) {
@@ -51,7 +97,7 @@ function determineNextStage(
       }
       return { stage: "contact_request", data: updatedData };
 
-    case "consent_request":
+    case "consent_request": {
       const consentKeywords = [
         "подтверждаю",
         "согласен",
@@ -69,6 +115,7 @@ function determineNextStage(
         return { stage: "completed", data: updatedData };
       }
       return { stage: "consent_request", data: updatedData };
+    }
 
     case "completed":
       return { stage: "completed", data: updatedData };
@@ -91,12 +138,23 @@ export async function POST(request: NextRequest) {
       messages.filter((m) => m.role === "user").pop()?.content ?? "";
     const userMessageCount = messages.filter((m) => m.role === "user").length;
 
+    logger.info("chat_message_received", {
+      stage,
+      userMessageCount,
+      messageLength: lastUserMessage.length,
+    });
+
     const { stage: nextStage, data: updatedData } = determineNextStage(
       stage,
       lastUserMessage,
       collectedData,
-      userMessageCount
+      userMessageCount,
+      messages
     );
+
+    if (nextStage !== stage) {
+      logger.info("stage_transition", { from: stage, to: nextStage });
+    }
 
     const systemPrompt = buildSystemPrompt(nextStage, updatedData);
 
@@ -105,9 +163,24 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    const reply = await getChatCompletion(systemPrompt, chatMessages);
+    logger.info("openai_request_started", { stage: nextStage });
+    let reply: string;
+    try {
+      reply = await getChatCompletion(systemPrompt, chatMessages);
+      logger.info("openai_request_completed", { stage: nextStage });
+    } catch (err) {
+      logger.error("openai_request_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return NextResponse.json(
+        { error: "AI service error" },
+        { status: 500 }
+      );
+    }
 
     if (nextStage === "completed" && updatedData.consentGiven) {
+      logger.info("consent_given", { name: updatedData.name });
+
       const chatMessageObjects: ChatMessage[] = messages.map((m, i) => ({
         id: String(i),
         role: m.role as "user" | "assistant",
@@ -115,23 +188,51 @@ export async function POST(request: NextRequest) {
         timestamp: Date.now(),
       }));
 
-      const summary = buildLeadSummary(chatMessageObjects, updatedData);
+      const business = extractBusinessFromMessages(chatMessageObjects);
+      const task = extractTaskFromMessages(chatMessageObjects);
+      const interest = extractInterestFromMessages(chatMessageObjects);
+      const summary = buildLeadSummary(task, business, interest, updatedData);
       const rawConversation = buildRawConversation(chatMessageObjects);
+      const leadStatus = determineLeadStatus(updatedData, userMessageCount);
 
       updatedData.summary = summary;
 
-      sendLeadToGoogleSheets({
-        name: updatedData.name || "Не указано",
-        contact: updatedData.contact || "Не указан",
+      const leadPayload = {
+        name: updatedData.name || "не указано",
+        contact: updatedData.contact || "не указан",
         contactType: updatedData.contactType || "unknown",
-        request: updatedData.request || "Не указан",
+        request: task,
         summary,
         consentGiven: true,
         source: "website-chat",
         rawConversation,
-      }).catch((err) => {
-        console.error("Lead send failed (background):", err);
-      });
+      };
+
+      const sheetsResult = await sendLeadToGoogleSheets(leadPayload);
+
+      if (sheetsResult.success) {
+        logger.info("lead_saved_to_sheet", { name: leadPayload.name });
+
+        sendTelegramNotification({
+          name: leadPayload.name,
+          contact: leadPayload.contact,
+          contactType: leadPayload.contactType,
+          business,
+          task,
+          interest,
+          leadStatus,
+          consentGiven: true,
+          summary,
+        }).catch((err) => {
+          logger.error("telegram_notification_failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      } else {
+        logger.error("lead_save_failed", { error: sheetsResult.error });
+      }
+
+      reply = "Спасибо, заявка принята. Менеджер свяжется с вами в ближайшее время. Если у вас есть дополнительные вопросы — пишите, буду рад помочь.";
     }
 
     return NextResponse.json({
@@ -140,7 +241,9 @@ export async function POST(request: NextRequest) {
       collectedData: updatedData,
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    logger.error("openai_request_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
