@@ -17,6 +17,10 @@ type LogEvent =
   | "openai_request_failed"
   | "consent_given"
   | "consent_refused"
+  | "contact_declined"
+  | "completed_guard_blocked"
+  | "new_lead_intent"
+  | "perf_timing"
   | "fallback_triggered";
 
 interface LogEntry {

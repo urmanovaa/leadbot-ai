@@ -17,14 +17,16 @@ export async function getChatCompletion(
 ): Promise<string> {
   const openai = getOpenAIClient();
 
+  const trimmed = messages.length > 12 ? messages.slice(-12) : messages;
+
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: systemPrompt },
-      ...messages,
+      ...trimmed,
     ],
-    temperature: 0.7,
-    max_tokens: 500,
+    temperature: 0.6,
+    max_tokens: 350,
   });
 
   return response.choices[0]?.message?.content ?? "Произошла ошибка. Попробуйте ещё раз.";

@@ -27,6 +27,8 @@ export interface CollectedData {
   request?: string;
   summary?: string;
   consentGiven?: boolean;
+  contactDeclined?: boolean;
+  leadSubmitted?: boolean;
 }
 
 export interface LeadPayload {

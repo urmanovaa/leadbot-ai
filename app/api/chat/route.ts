@@ -22,6 +22,35 @@ function determineLeadStatus(data: CollectedData, messageCount: number): string 
   return "cold";
 }
 
+const CONTACT_REFUSAL_PATTERNS = [
+  /не\s*хочу\s*(давать|оставлять)/i,
+  /без\s*контакт/i,
+  /не\s*буду\s*(давать|оставлять)/i,
+  /не\s*оставлю/i,
+  /не\s*дам\s*(номер|телефон|контакт|тг|telegram)/i,
+  /не\s*хочу\s*(номер|телефон|контакт|тг|telegram)/i,
+  /нет,?\s*(спасибо|не надо|не хочу)/i,
+];
+
+function isContactRefusal(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  return CONTACT_REFUSAL_PATTERNS.some((p) => p.test(lower));
+}
+
+const NEW_LEAD_PATTERNS = [
+  /нов(ая|ую)\s*заявк/i,
+  /друг(ой|ую|ая)\s*(проект|задач)/i,
+  /начать\s*заново/i,
+  /оформ\w*\s*нов/i,
+  /ещё\s*одн/i,
+  /еще\s*одн/i,
+  /это\s*друг(ой|ое)/i,
+];
+
+function isNewLeadIntent(text: string): boolean {
+  return NEW_LEAD_PATTERNS.some((p) => p.test(text.toLowerCase().trim()));
+}
+
 function wasAskingForName(messages: { role: string; content: string }[]): boolean {
   const lastAssistant = [...messages]
     .reverse()
@@ -83,7 +112,12 @@ function determineNextStage(
       return { stage: "qualification", data: updatedData };
 
     case "qualification":
+      if (isContactRefusal(userText)) {
+        updatedData.contactDeclined = true;
+        return { stage: "contact_request", data: updatedData };
+      }
       if (updatedData.contact) {
+        updatedData.contactDeclined = false;
         return { stage: "consent_request", data: updatedData };
       }
       if (messageCount >= 4) {
@@ -93,7 +127,12 @@ function determineNextStage(
 
     case "contact_request":
       if (updatedData.contact) {
+        updatedData.contactDeclined = false;
         return { stage: "consent_request", data: updatedData };
+      }
+      if (isContactRefusal(userText)) {
+        updatedData.contactDeclined = true;
+        return { stage: "contact_request", data: updatedData };
       }
       return { stage: "contact_request", data: updatedData };
 
@@ -118,6 +157,10 @@ function determineNextStage(
     }
 
     case "completed":
+      if (isNewLeadIntent(userText) && updatedData.leadSubmitted) {
+        const freshData: CollectedData = {};
+        return { stage: "greeting", data: freshData };
+      }
       return { stage: "completed", data: updatedData };
 
     default:
@@ -126,6 +169,7 @@ function determineNextStage(
 }
 
 export async function POST(request: NextRequest) {
+  const t0 = Date.now();
   try {
     const body: ChatApiRequest = await request.json();
     const { messages, stage, collectedData } = body;
@@ -156,6 +200,14 @@ export async function POST(request: NextRequest) {
       logger.info("stage_transition", { from: stage, to: nextStage });
     }
 
+    if (updatedData.contactDeclined && !collectedData.contactDeclined) {
+      logger.info("contact_declined", {});
+    }
+
+    if (isNewLeadIntent(lastUserMessage) && stage === "completed") {
+      logger.info("new_lead_intent", {});
+    }
+
     const systemPrompt = buildSystemPrompt(nextStage, updatedData);
 
     const chatMessages = messages.map((m) => ({
@@ -163,11 +215,11 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    logger.info("openai_request_started", { stage: nextStage });
+    const tLlm = Date.now();
     let reply: string;
     try {
       reply = await getChatCompletion(systemPrompt, chatMessages);
-      logger.info("openai_request_completed", { stage: nextStage });
+      logger.info("perf_timing", { step: "openai_response_ms", ms: Date.now() - tLlm });
     } catch (err) {
       logger.error("openai_request_failed", {
         error: err instanceof Error ? err.message : String(err),
@@ -178,7 +230,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (nextStage === "completed" && updatedData.consentGiven) {
+    const shouldSaveLead =
+      nextStage === "completed" &&
+      updatedData.consentGiven &&
+      !updatedData.leadSubmitted &&
+      stage !== "completed";
+
+    if (shouldSaveLead) {
       logger.info("consent_given", { name: updatedData.name });
 
       const chatMessageObjects: ChatMessage[] = messages.map((m, i) => ({
@@ -208,11 +266,15 @@ export async function POST(request: NextRequest) {
         rawConversation,
       };
 
+      const tSheets = Date.now();
       const sheetsResult = await sendLeadToGoogleSheets(leadPayload);
+      logger.info("perf_timing", { step: "google_sheets_ms", ms: Date.now() - tSheets });
 
       if (sheetsResult.success) {
         logger.info("lead_saved_to_sheet", { name: leadPayload.name });
+        updatedData.leadSubmitted = true;
 
+        const tTg = Date.now();
         sendTelegramNotification({
           name: leadPayload.name,
           contact: leadPayload.contact,
@@ -223,17 +285,27 @@ export async function POST(request: NextRequest) {
           leadStatus,
           consentGiven: true,
           summary,
-        }).catch((err) => {
-          logger.error("telegram_notification_failed", {
-            error: err instanceof Error ? err.message : String(err),
+        })
+          .then(() => {
+            logger.info("perf_timing", { step: "telegram_ms", ms: Date.now() - tTg });
+          })
+          .catch((err) => {
+            logger.error("telegram_notification_failed", {
+              error: err instanceof Error ? err.message : String(err),
+            });
           });
-        });
       } else {
         logger.error("lead_save_failed", { error: sheetsResult.error });
       }
 
       reply = "Спасибо, заявка принята. Менеджер свяжется с вами в ближайшее время. Если у вас есть дополнительные вопросы — пишите, буду рад помочь.";
     }
+
+    if (stage === "completed" && nextStage === "completed" && updatedData.leadSubmitted) {
+      logger.info("completed_guard_blocked", {});
+    }
+
+    logger.info("perf_timing", { step: "total_request_ms", ms: Date.now() - t0 });
 
     return NextResponse.json({
       reply,
